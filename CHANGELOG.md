@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-05-18
+
+### Added
+
+- `Funnelion\Client::formEvent()` / `formEventOrNull()` — record a form-submission event against the visitor's tracking session. Mirrors the new `POST /api/v1/form-event` endpoint.
+- `Funnelion\FormEvent\Request` and `Funnelion\FormEvent\Response` value objects.
+
+### Changed
+
+- `Client` internals refactored to share POST + auth + JSON decoding between `resolve()` and `formEvent()`. No behavioural change for existing callers.
+
 ## [0.1.0] — 2026-05-18
 
 Initial public release.

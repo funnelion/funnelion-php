@@ -109,6 +109,32 @@ try {
 
 Catch the base `FunnelionException` to handle all SDK-thrown errors with a single block. The typed subclasses are there if you want to distinguish.
 
+## Recording form submissions
+
+When the visitor converts (contact form, demo request, signup, etc.), call `formEvent()` from your form handler **after** your own work has succeeded (email sent, CRM record created, ack returned to the user). The SDK reports the conversion to Funnelion so the dashboard can show it attributed to the visit's traffic source.
+
+```php
+use Funnelion\FormEvent\Request as FormEventRequest;
+
+// After your form handler accepts the submission and does its real work:
+$client->formEventOrNull(new FormEventRequest(
+    ip:        $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'],
+    fields:    [
+        'email' => $_POST['email'],
+        'name'  => $_POST['name'],
+        'phone' => $_POST['phone'] ?? null,
+    ],
+    visitorId: Session::readFromGlobals(),  // matches the cookie set by resolve()
+    url:       'https://example.com/'.$_SERVER['REQUEST_URI'],
+    referrer:  $_SERVER['HTTP_REFERER'] ?? null,
+    userAgent: $_SERVER['HTTP_USER_AGENT'] ?? null,
+));
+```
+
+`formEventOrNull()` returns `null` on any failure — your form submission flow keeps working even if Funnelion is down. The Funnelion dashboard records every submission and marks attribution as `attributed` (matched a visitor session) or `no_match` (still recorded; attribution couldn't be tied to a source).
+
+`formEvent()` (without the `OrNull` suffix) throws a typed exception on failure — use that when you want to log/alert on attribution drops.
+
 ## Cookie handling
 
 The SDK does **not** call `setcookie()` for you — every framework has its own conventions (queued cookies in Laravel, Response headers in Symfony, hooked output in WordPress). Instead, it produces a ready-to-emit Set-Cookie header value:

@@ -10,6 +10,8 @@ use Funnelion\Exception\NetworkException;
 use Funnelion\Exception\RateLimitException;
 use Funnelion\Exception\ServerException;
 use Funnelion\Exception\ValidationException;
+use Funnelion\FormEvent\Request as FormEventRequest;
+use Funnelion\FormEvent\Response as FormEventResponse;
 use Funnelion\Http\CurlTransport;
 use Funnelion\Http\Transport;
 use Funnelion\Resolve\Request;
@@ -53,20 +55,9 @@ final class Client
      */
     public function resolve(Request $request): Response
     {
-        $http = $this->transport->send(
-            method: 'POST',
-            uri: rtrim($this->config->baseUri, '/').'/api/v1/resolve',
-            headers: [
-                'Authorization' => 'Bearer '.$this->config->siteToken,
-                'Content-Type' => 'application/json',
-                'Accept' => 'application/json',
-                'User-Agent' => $this->config->userAgent,
-            ],
-            body: (string) json_encode($request->toArray(), JSON_THROW_ON_ERROR),
-            timeoutSeconds: $this->config->timeoutSeconds,
-        );
+        $body = $this->send('/api/v1/resolve', $request->toArray());
 
-        return $this->parseResponse($http->statusCode, $http->body);
+        return Response::fromArray($body);
     }
 
     /**
@@ -86,12 +77,68 @@ final class Client
         }
     }
 
-    private function parseResponse(int $statusCode, string $body): Response
+    /**
+     * Record a form-submission event. Call after your form handler
+     * accepts the submission so Funnelion can attach the lead to the
+     * tracking session that landed on your page.
+     *
+     * Throws a typed FunnelionException on failure; use
+     * formEventOrNull() to swallow errors silently.
+     */
+    public function formEvent(FormEventRequest $request): FormEventResponse
+    {
+        $body = $this->send('/api/v1/form-event', $request->toArray());
+
+        return FormEventResponse::fromArray($body);
+    }
+
+    /**
+     * formEvent, returning null on any failure instead of throwing —
+     * use this when a Funnelion outage shouldn't surface to the visitor
+     * who just submitted the form (their email/CRM/etc. still gets
+     * through; only the lead-attribution side fails silently).
+     */
+    public function formEventOrNull(FormEventRequest $request): ?FormEventResponse
+    {
+        try {
+            return $this->formEvent($request);
+        } catch (FunnelionException) {
+            return null;
+        }
+    }
+
+    /**
+     * Shared POST + auth + decode. Returns the parsed JSON body of a
+     * 2xx response; throws a typed FunnelionException for 4xx/5xx.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array<string, mixed>
+     */
+    private function send(string $path, array $payload): array
+    {
+        $http = $this->transport->send(
+            method: 'POST',
+            uri: rtrim($this->config->baseUri, '/').$path,
+            headers: [
+                'Authorization' => 'Bearer '.$this->config->siteToken,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json',
+                'User-Agent' => $this->config->userAgent,
+            ],
+            body: (string) json_encode($payload, JSON_THROW_ON_ERROR),
+            timeoutSeconds: $this->config->timeoutSeconds,
+        );
+
+        return $this->parseJsonBody($http->statusCode, $http->body);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function parseJsonBody(int $statusCode, string $body): array
     {
         if ($statusCode >= 200 && $statusCode < 300) {
-            $decoded = $this->decodeJson($body);
-
-            return Response::fromArray($decoded);
+            return $this->decodeJson($body);
         }
 
         $decoded = $body !== '' ? $this->tryDecodeJson($body) : null;
