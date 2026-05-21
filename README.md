@@ -135,6 +135,39 @@ $client->formEventOrNull(new FormEventRequest(
 
 `formEvent()` (without the `OrNull` suffix) throws a typed exception on failure — use that when you want to log/alert on attribution drops.
 
+## Language
+
+Both `Resolve\Request` and `FormEvent\Request` accept an optional `language` field. Funnelion stores it on the visitor's tracking session and uses it to drive downstream attribution (e.g. when Funnelion fires GA4 events for inbound emails and calls, the language is read from the session — no URL parsing on Funnelion's side).
+
+```php
+$client->resolveOrNull(new Funnelion\Resolve\Request(
+    url:      'https://example.com/en/about',
+    ip:       $visitorIp,
+    language: 'en',                   // ← free-form: "en", "lt", "de-DE", "zh-Hans-CN", …
+));
+
+$client->formEventOrNull(new Funnelion\FormEvent\Request(
+    ip:        $visitorIp,
+    fields:    $sanitisedFields,
+    visitorId: Session::readFromGlobals(),
+    language:  'en',
+));
+```
+
+Funnelion doesn't enforce a vocabulary — pass whatever your site uses. Whatever value you send becomes the literal `language` field on the session and on dispatched events.
+
+### Recommended detection patterns
+
+The language **must be set by your application** because only you know the source of truth. Recommended sources in order of robustness:
+
+1. **Your i18n framework's current-locale value.** Laravel `app()->getLocale()`, Symfony `LocaleAwareInterface::getLocale()`, WordPress `get_locale()`, your own router. This is what your templates use; it's already correct.
+2. **The URL path/host convention your site uses.** `str_contains($_SERVER['REQUEST_URI'], '/en/') ? 'en' : 'lt'`. Cheap, works for path-based i18n. Brittle if URL convention changes.
+3. **The `Accept-Language` HTTP header.** Last resort — reflects the browser's preference, not the page's actual language. A Lithuanian-speaker reading your English page reports `lt`, which is wrong for attribution.
+
+If `language` is omitted, the session's existing language stays untouched (first-hit-wins on `null`); if no hit has ever supplied a language, downstream events fire without one.
+
+The language updates on each call that supplies a non-null value (a visitor who switches `/en/` ↔ `/lt/` mid-session attributes their downstream events to the *most recent* page). This differs from UTM behaviour (first-hit-wins) on purpose.
+
 ## Cookie handling
 
 The SDK does **not** call `setcookie()` for you — every framework has its own conventions (queued cookies in Laravel, Response headers in Symfony, hooked output in WordPress). Instead, it produces a ready-to-emit Set-Cookie header value:

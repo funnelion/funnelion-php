@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] — 2026-05-18
+
+### Added
+
+- Optional `language` field on `Funnelion\Resolve\Request` and `Funnelion\FormEvent\Request`. Free-form string ("en", "lt", "de-DE", …) that Funnelion stores on the visitor's tracking session and uses to drive downstream attribution (notably for the planned Funnelion-fires-GA4 dispatch of inbound email and call events). See README "Language" section for the recommended detection patterns.
+
 ## [0.2.0] — 2026-05-18
 
 ### Added

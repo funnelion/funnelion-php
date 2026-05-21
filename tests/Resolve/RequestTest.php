@@ -24,6 +24,7 @@ final class RequestTest extends TestCase
             referrer: 'https://google.com/',
             userAgent: 'UA',
             visitorId: 'uuid',
+            language: 'en',
         );
 
         $this->assertSame([
@@ -32,7 +33,14 @@ final class RequestTest extends TestCase
             'referrer' => 'https://google.com/',
             'user_agent' => 'UA',
             'visitor_id' => 'uuid',
+            'language' => 'en',
         ], $request->toArray());
+    }
+
+    public function testLanguageOmittedFromArrayWhenNull(): void
+    {
+        $request = new Request(url: 'https://example.com/', ip: '1.2.3.4');
+        $this->assertArrayNotHasKey('language', $request->toArray());
     }
 
     public function testEmptyUrlIsRejected(): void

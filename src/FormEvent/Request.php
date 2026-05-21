@@ -19,6 +19,12 @@ final class Request
     /**
      * @param  array<string, scalar|null>  $fields  submitted form fields
      *        (keys = HTML name attributes, values = strings)
+     * @param  ?string  $language  the language code of the page the
+     *        form was submitted from. Same semantics + free-form
+     *        vocabulary as Funnelion\Resolve\Request::$language —
+     *        when supplied alongside a matching visitor_id, Funnelion
+     *        also updates the session's stored language to this
+     *        value (the form-submit is treated as the latest signal).
      */
     public function __construct(
         public readonly string $ip,
@@ -29,6 +35,7 @@ final class Request
         public readonly ?string $visitorId = null,
         public readonly ?int $formId = null,
         public readonly ?string $formActionUrl = null,
+        public readonly ?string $language = null,
     ) {
         if ($ip === '') {
             throw new \InvalidArgumentException('ip must not be empty.');
@@ -64,6 +71,9 @@ final class Request
         }
         if ($this->formActionUrl !== null) {
             $out['form_action_url'] = $this->formActionUrl;
+        }
+        if ($this->language !== null) {
+            $out['language'] = $this->language;
         }
 
         return $out;
