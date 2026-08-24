@@ -168,6 +168,47 @@ If `language` is omitted, the session's existing language stays untouched (first
 
 The language updates on each call that supplies a non-null value (a visitor who switches `/en/` ↔ `/lt/` mid-session attributes their downstream events to the *most recent* page). This differs from UTM behaviour (first-hit-wins) on purpose.
 
+## Google Analytics 4 attribution
+
+Funnelion fires GA4 events for the calls and emails it attributes to a visitor (`phone_call_received_lt`, `email_received_en`, …). For GA4 to credit those events to the campaign that brought the visitor in, they have to arrive under the identifiers **GA4's own tag issued** for that visitor. Send them on every call and this is handled for you:
+
+```php
+use Funnelion\Cookie\GoogleAnalytics;
+
+$client->resolveOrNull(new Funnelion\Resolve\Request(
+    url:         $visitorUrl,
+    ip:          $visitorIp,
+    visitorId:   Funnelion\Cookie\Session::readFromGlobals(),
+    gaClientId:  GoogleAnalytics::clientIdFromGlobals(),                // `_ga` cookie
+    gaSessionId: GoogleAnalytics::sessionIdFromGlobals('G-ABC123'),     // `_ga_ABC123` cookie
+));
+```
+
+Both helpers read first-party cookies `gtag.js` wrote, so no JS API call is involved. `FormEvent\Request` takes the same two fields.
+
+**Skip this and your GA4 reports say "Unassigned."** Without the real client id, GA4 has never seen the visitor: the event opens a brand-new user and a brand-new session carrying no acquisition data, and lands under the *Unassigned* channel group. With the ids, the event joins the session the visitor is actually in and inherits its source / medium / campaign.
+
+### Both cookies are often absent — that's expected
+
+`gtag.js` writes its cookies only *after* the page has loaded, so the request that rendered the page could not have read them. Both helpers return `null` there, and also when the visitor declined analytics consent or the site runs no GA tag at all.
+
+Send them anyway on every call. Funnelion keeps the newest non-null values it receives, so the ids attach from the visitor's second request onwards — and if you want them attached on the *first* page of a visit (the visitor who lands and calls the number immediately), have the page hand them over as soon as the tag is live:
+
+```js
+// after gtag.js is loaded and configured
+gtag('get', 'G-ABC123', 'client_id', (clientId) => {
+  gtag('get', 'G-ABC123', 'session_id', (sessionId) => {
+    navigator.sendBeacon('/api/funnelion-ga-ids', JSON.stringify({ clientId, sessionId }));
+  });
+});
+```
+
+…where that endpoint on your server passes the two values into the next `Resolve\Request`.
+
+### No GA tag on the site?
+
+Nothing more to do. When Funnelion has no GA session to join, it attributes the event from the UTMs, click ids and referrer it recorded when the visitor landed, sending them to GA4 as the event's traffic source. You get a correctly grouped session either way — the identifiers above simply make it the visitor's *existing* session rather than a new one.
+
 ## Cookie handling
 
 The SDK does **not** call `setcookie()` for you — every framework has its own conventions (queued cookies in Laravel, Response headers in Symfony, hooked output in WordPress). Instead, it produces a ready-to-emit Set-Cookie header value:

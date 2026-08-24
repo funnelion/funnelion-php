@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `Funnelion\Cookie\GoogleAnalytics` — reads the visitor's GA4 client id (`_ga` cookie) and session id (per-stream `_ga_<stream>` cookie, both the current `GS2` and legacy `GS1` value formats).
+- Optional `gaClientId` / `gaSessionId` fields on `Funnelion\Resolve\Request` and `Funnelion\FormEvent\Request`, sent as `ga_client_id` / `ga_session_id`. Funnelion fires its GA4 events for this visitor's inbound calls and emails under these identifiers, which is what makes GA4 attribute them to the session — and therefore the campaign — the visitor is actually in. Without them such events report under GA4's "Unassigned" channel group. See README "Google Analytics 4 attribution".
+
 ## [0.3.0] — 2026-05-18
 
 ### Added

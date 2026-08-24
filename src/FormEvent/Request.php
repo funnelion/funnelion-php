@@ -25,6 +25,15 @@ final class Request
      *        when supplied alongside a matching visitor_id, Funnelion
      *        also updates the session's stored language to this
      *        value (the form-submit is treated as the latest signal).
+     * @param  ?string  $gaClientId  the visitor's GA4 client id (`_ga`
+     *        cookie — see Cookie\GoogleAnalytics). Same semantics as
+     *        Funnelion\Resolve\Request::$gaClientId; supplied here too
+     *        because a form submit is frequently the first request that
+     *        can see the cookie at all — gtag writes it after the page
+     *        that resolve rendered had already been sent.
+     * @param  ?string  $gaSessionId  the visitor's GA4 session id
+     *        (`_ga_<stream>` cookie). Same semantics as
+     *        Funnelion\Resolve\Request::$gaSessionId.
      */
     public function __construct(
         public readonly string $ip,
@@ -36,6 +45,8 @@ final class Request
         public readonly ?int $formId = null,
         public readonly ?string $formActionUrl = null,
         public readonly ?string $language = null,
+        public readonly ?string $gaClientId = null,
+        public readonly ?string $gaSessionId = null,
     ) {
         if ($ip === '') {
             throw new \InvalidArgumentException('ip must not be empty.');
@@ -74,6 +85,12 @@ final class Request
         }
         if ($this->language !== null) {
             $out['language'] = $this->language;
+        }
+        if ($this->gaClientId !== null) {
+            $out['ga_client_id'] = $this->gaClientId;
+        }
+        if ($this->gaSessionId !== null) {
+            $out['ga_session_id'] = $this->gaSessionId;
         }
 
         return $out;
