@@ -116,6 +116,8 @@ final class ClientFormEventTest extends TestCase
             formId: 7,
             formActionUrl: 'https://example.com/api/contact',
             language: 'lt',
+            formKey: 'wp:7',
+            formName: 'Contact us',
         );
 
         $this->assertSame([
@@ -126,6 +128,8 @@ final class ClientFormEventTest extends TestCase
             'user_agent' => 'UA',
             'visitor_id' => 'uuid',
             'form_id' => 7,
+            'form_key' => 'wp:7',
+            'form_name' => 'Contact us',
             'form_action_url' => 'https://example.com/api/contact',
             'language' => 'lt',
         ], $r->toArray());

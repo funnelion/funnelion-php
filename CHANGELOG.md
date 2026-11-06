@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Optional `formKey` / `formName` on `Funnelion\FormEvent\Request`, sent as `form_key` / `form_name`. The first submission with a new key registers the form on the site's Forms screen in Funnelion; the name labels it there.
 - `Funnelion\Client::pageView()` / `pageViewQuietly()` and `Funnelion\PageView\Request` — report a page the visitor opened that you rendered without calling resolve (typically: served from a per-visitor resolve cache). Mirrors the new `POST /api/v1/page-view`. Without it the visitor's browsing history in Funnelion skips every page served from the cache. See README "Page views".
 - `Funnelion\Http\AfterResponse::defer()` — run a task after the response has been handed to the visitor (PHP-FPM / LiteSpeed), so a page view never adds to load time.
 

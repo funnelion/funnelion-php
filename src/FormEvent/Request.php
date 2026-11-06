@@ -31,6 +31,13 @@ final class Request
      *        because a form submit is frequently the first request that
      *        can see the cookie at all — gtag writes it after the page
      *        that resolve rendered had already been sent.
+     * @param  ?string  $formKey  your own stable name for the form
+     *        ("wp:7" for Contact Form 7 form 7, "custom:quote"). The
+     *        first submission with a new key registers the form on the
+     *        site's Forms screen in Funnelion. Preferred over $formId,
+     *        which means a Funnelion Form id.
+     * @param  ?string  $formName  the form's human title, used to name
+     *        it when Funnelion registers it.
      * @param  ?string  $gaSessionId  the visitor's GA4 session id
      *        (`_ga_<stream>` cookie). Same semantics as
      *        Funnelion\Resolve\Request::$gaSessionId.
@@ -47,6 +54,8 @@ final class Request
         public readonly ?string $language = null,
         public readonly ?string $gaClientId = null,
         public readonly ?string $gaSessionId = null,
+        public readonly ?string $formKey = null,
+        public readonly ?string $formName = null,
     ) {
         if ($ip === '') {
             throw new \InvalidArgumentException('ip must not be empty.');
@@ -79,6 +88,12 @@ final class Request
         }
         if ($this->formId !== null) {
             $out['form_id'] = $this->formId;
+        }
+        if ($this->formKey !== null && $this->formKey !== '') {
+            $out['form_key'] = $this->formKey;
+        }
+        if ($this->formName !== null && $this->formName !== '') {
+            $out['form_name'] = $this->formName;
         }
         if ($this->formActionUrl !== null) {
             $out['form_action_url'] = $this->formActionUrl;
